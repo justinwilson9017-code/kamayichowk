@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, Job } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Briefcase, MessageSquare, TrendingUp, Trash2, Shield, UserX, CheckCircle, XCircle, Plus, Edit, Database, Terminal, Copy } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 export default function AdminDashboard({ user }: { user: User }) {
   const [stats, setStats] = useState<any>(null);
@@ -24,48 +25,65 @@ export default function AdminDashboard({ user }: { user: User }) {
     fetchStats();
     fetchJobs();
     fetchUsers();
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}`);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'NEW_JOB' || data.type === 'JOB_DELETED' || data.type === 'NEW_BID' || data.type === 'JOB_STATUS_UPDATED') {
-        fetchStats();
-        fetchJobs();
-      }
-    };
-    return () => ws.close();
   }, []);
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/admin/stats');
-      const data = await res.json();
-      if (Array.isArray(data) || (data && !data.error)) {
-        setStats(data);
-        setError(null);
-      } else {
-        console.error('Stats error:', data.error);
-        setError(data.error || 'Failed to fetch stats');
-      }
-    } catch (err) {
+      const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
+      const { count: totalJobs } = await supabase.from('jobs').select('*', { count: 'exact', head: true });
+      const { count: totalBids } = await supabase.from('bids').select('*', { count: 'exact', head: true });
+      
+      const { data: allJobs } = await supabase.from('jobs').select('field');
+      const { data: allUsers } = await supabase.from('users').select('role');
+
+      const jobsByField = allJobs ? Object.entries(
+        allJobs.reduce((acc: any, curr) => {
+          acc[curr.field] = (acc[curr.field] || 0) + 1;
+          return acc;
+        }, {})
+      ).map(([field, count]) => ({ field, count })) : [];
+
+      const usersByRole = allUsers ? Object.entries(
+        allUsers.reduce((acc: any, curr) => {
+          acc[curr.role] = (acc[curr.role] || 0) + 1;
+          return acc;
+        }, {})
+      ).map(([role, count]) => ({ role, count })) : [];
+
+      setStats({
+        totalUsers,
+        totalJobs,
+        totalBids,
+        jobsByField,
+        usersByRole
+      });
+      setError(null);
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to fetch stats');
     }
   };
 
   const fetchJobs = async () => {
     try {
-      const res = await fetch('/api/jobs');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setJobs(data);
-        setError(null);
-      } else {
-        console.error('Jobs error:', data.error);
-        setError(data.error || 'Failed to fetch jobs');
-        setJobs([]);
-      }
-    } catch (err) {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*, hirer:users(name)')
+        .neq('status', 'deleted')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedJobs = (data || []).map(j => ({
+        ...j,
+        hirer_name: (j as any).hirer?.name
+      }));
+
+      setJobs(formattedJobs);
+      setError(null);
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to fetch jobs');
       setJobs([]);
     } finally {
       setLoading(false);
@@ -74,29 +92,29 @@ export default function AdminDashboard({ user }: { user: User }) {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setUsers(data);
-        setError(null);
-      } else {
-        console.error('Users error:', data.error);
-        setError(data.error || 'Failed to fetch users');
-        setUsers([]);
-      }
-    } catch (err) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, name, role, field, is_admin, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
+      setError(null);
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to fetch users');
       setUsers([]);
     }
   };
 
   const handleUpdateJobStatus = async (id: number, status: string) => {
     try {
-      await fetch(`/api/admin/jobs/${id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
       fetchJobs();
     } catch (err) {
       console.error(err);
@@ -106,7 +124,12 @@ export default function AdminDashboard({ user }: { user: User }) {
   const handleDeleteUser = async (id: number) => {
     if (!confirm('Admin Action: Delete this user?')) return;
     try {
-      await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       setUsers(prev => prev.filter(u => u.id !== id));
       fetchStats();
     } catch (err) {
@@ -118,26 +141,33 @@ export default function AdminDashboard({ user }: { user: User }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const endpoint = editingJob ? `/api/jobs/${editingJob.id}` : '/api/jobs';
-      const method = editingJob ? 'PUT' : 'POST';
-      
-      const res = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hirer_id: user.id,
-          title: jobTitle,
-          description: jobDesc,
-          field: jobField,
-          budget: parseFloat(jobBudget),
-        }),
-      });
-      
-      if (res.ok) {
-        fetchJobs();
-        setShowJobModal(false);
-        resetJobForm();
+      if (editingJob) {
+        const { error } = await supabase
+          .from('jobs')
+          .update({
+            title: jobTitle,
+            description: jobDesc,
+            field: jobField,
+            budget: parseFloat(jobBudget),
+          })
+          .eq('id', editingJob.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('jobs')
+          .insert([{
+            hirer_id: user.id,
+            title: jobTitle,
+            description: jobDesc,
+            field: jobField,
+            budget: parseFloat(jobBudget),
+          }]);
+        if (error) throw error;
       }
+      
+      fetchJobs();
+      setShowJobModal(false);
+      resetJobForm();
     } catch (err) {
       console.error(err);
     } finally {

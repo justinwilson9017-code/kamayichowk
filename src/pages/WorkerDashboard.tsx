@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2 } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 export default function WorkerDashboard({ user }: { user: User }) {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -17,35 +18,25 @@ export default function WorkerDashboard({ user }: { user: User }) {
   useEffect(() => {
     fetchJobs();
     fetchMyBids();
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}`);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'NEW_JOB') {
-        if (data.job.field === user.field) {
-          setJobs(prev => [data.job, ...prev]);
-        }
-      } else if (data.type === 'JOB_DELETED') {
-        setJobs(prev => prev.filter(j => j.id !== parseInt(data.jobId)));
-      } else if (data.type === 'BID_STATUS_UPDATED') {
-        setMyBids(prev => prev.map(b => b.id === parseInt(data.bidId) ? { ...b, status: data.status } : b));
-      } else if (data.type === 'BID_DELETED') {
-        setMyBids(prev => prev.filter(b => b.id !== parseInt(data.bidId)));
-      }
-    };
-    return () => ws.close();
   }, [user.field, user.id]);
 
   const fetchJobs = async () => {
     try {
-      const res = await fetch(`/api/jobs?field=${user.field}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setJobs(data);
-      } else {
-        console.error('Jobs error:', data.error);
-        setJobs([]);
-      }
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*, hirer:users(name)')
+        .eq('status', 'active')
+        .eq('field', user.field)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedJobs = (data || []).map(j => ({
+        ...j,
+        hirer_name: (j as any).hirer?.name
+      }));
+
+      setJobs(formattedJobs);
     } catch (err) {
       console.error(err);
       setJobs([]);
@@ -56,14 +47,21 @@ export default function WorkerDashboard({ user }: { user: User }) {
 
   const fetchMyBids = async () => {
     try {
-      const res = await fetch(`/api/bids/worker/${user.id}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setMyBids(data);
-      } else {
-        console.error('Bids error:', data.error);
-        setMyBids([]);
-      }
+      const { data, error } = await supabase
+        .from('bids')
+        .select('*, job:jobs(title, location)')
+        .eq('worker_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedBids = (data || []).map(b => ({
+        ...b,
+        job_title: (b as any).job?.title,
+        job_location: (b as any).job?.location
+      }));
+
+      setMyBids(formattedBids);
     } catch (err) {
       console.error(err);
       setMyBids([]);
@@ -75,26 +73,25 @@ export default function WorkerDashboard({ user }: { user: User }) {
     if (!selectedJob) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/bids', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { error } = await supabase
+        .from('bids')
+        .insert([{
           job_id: selectedJob.id,
           worker_id: user.id,
           amount: parseFloat(bidAmount),
           message: bidMessage,
-        }),
-      });
-      if (res.ok) {
-        setSuccess(true);
-        fetchMyBids();
-        setTimeout(() => {
-          setSuccess(false);
-          setSelectedJob(null);
-          setBidAmount('');
-          setBidMessage('');
-        }, 2000);
-      }
+        }]);
+
+      if (error) throw error;
+
+      setSuccess(true);
+      fetchMyBids();
+      setTimeout(() => {
+        setSuccess(false);
+        setSelectedJob(null);
+        setBidAmount('');
+        setBidMessage('');
+      }, 2000);
     } catch (err) {
       console.error(err);
     } finally {
@@ -105,10 +102,13 @@ export default function WorkerDashboard({ user }: { user: User }) {
   const handleDeleteBid = async (bidId: number) => {
     if (!confirm('Are you sure you want to retract this bid?')) return;
     try {
-      const res = await fetch(`/api/bids/${bidId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setMyBids(prev => prev.filter(b => b.id !== bidId));
-      }
+      const { error } = await supabase
+        .from('bids')
+        .delete()
+        .eq('id', bidId);
+
+      if (error) throw error;
+      setMyBids(prev => prev.filter(b => b.id !== bidId));
     } catch (err) {
       console.error(err);
     }

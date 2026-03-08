@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { User } from '../types';
 import { motion } from 'motion/react';
 import { User as UserIcon, Mail, Shield, Briefcase, CheckCircle, MapPin } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 export default function Profile({ user, onUpdate }: { user: User, onUpdate: (user: User) => void }) {
   const [name, setName] = useState(user.name);
@@ -15,17 +16,18 @@ export default function Profile({ user, onUpdate }: { user: User, onUpdate: (use
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id, name, email, location, picture }),
-      });
-      if (res.ok) {
-        const updatedUser = await res.json();
-        onUpdate(updatedUser);
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
-      }
+      const { data, error } = await supabase
+        .from('users')
+        .update({ name, email, location, picture })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      onUpdate({ ...data, isAdmin: !!data.is_admin });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error(err);
     } finally {

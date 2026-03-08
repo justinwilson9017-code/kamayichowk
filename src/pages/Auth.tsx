@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { User, Role } from '../types';
 import { Mail, Lock, User as UserIcon, Briefcase, ArrowRight, MapPin } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
   const [searchParams] = useSearchParams();
@@ -22,20 +23,69 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
     setError('');
     setLoading(true);
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const body = isLogin ? { email, password } : { email, password, name, role, field, location };
+    const isAdmin = email === 'justinwilson9017@gmail.com' ? 1 : 0;
 
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      if (isLogin) {
+        // Special case for the requested admin credentials
+        if (email === 'justinwilson9017@gmail.com' && password === 'admin706') {
+          const { data: existingUser, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Something went wrong');
+          if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
-      onLogin(data);
+          if (!existingUser) {
+            const { data: newUser, error: insertError } = await supabase
+              .from('users')
+              .insert([{ email, password, name: 'Super Admin', role: 'admin', is_admin: 1 }])
+              .select()
+              .single();
+            if (insertError) throw insertError;
+            onLogin({ ...newUser, isAdmin: true });
+          } else {
+            const { data: updatedUser, error: updateError } = await supabase
+              .from('users')
+              .update({ is_admin: 1, role: 'admin' })
+              .eq('email', email)
+              .select()
+              .single();
+            if (updateError) throw updateError;
+            onLogin({ ...updatedUser, isAdmin: true });
+          }
+        } else {
+          const { data: user, error: loginError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .eq('password', password)
+            .single();
+
+          if (loginError) throw new Error('Invalid credentials');
+          if (!user) throw new Error('Invalid credentials');
+          onLogin({ ...user, isAdmin: !!user.is_admin });
+        }
+      } else {
+        const { data: newUser, error: regError } = await supabase
+          .from('users')
+          .insert([{ 
+            email, 
+            password, 
+            name, 
+            role: isAdmin ? 'admin' : role, 
+            field, 
+            location: location || '', 
+            is_admin: isAdmin 
+          }])
+          .select()
+          .single();
+
+        if (regError) throw regError;
+        onLogin({ ...newUser, isAdmin: !!newUser.is_admin });
+      }
+      
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message);

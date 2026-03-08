@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Briefcase, Users, DollarSign, Clock, Trash2, ChevronRight, CheckCircle, MapPin, User as UserIcon } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 export default function HirerDashboard({ user }: { user: User }) {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -20,29 +21,19 @@ export default function HirerDashboard({ user }: { user: User }) {
 
   useEffect(() => {
     fetchJobs();
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}`);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'NEW_BID') {
-        if (selectedJob && data.bid.job_id === selectedJob.id) {
-          setBids(prev => [data.bid, ...prev]);
-        }
-      }
-    };
-    return () => ws.close();
-  }, [selectedJob]);
+  }, []);
 
   const fetchJobs = async () => {
     try {
-      const res = await fetch(`/api/jobs/hirer/${user.id}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setJobs(data);
-      } else {
-        console.error('Jobs error:', data.error);
-        setJobs([]);
-      }
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('hirer_id', user.id)
+        .neq('status', 'deleted')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setJobs(data || []);
     } catch (err) {
       console.error(err);
       setJobs([]);
@@ -54,14 +45,21 @@ export default function HirerDashboard({ user }: { user: User }) {
   const fetchBids = async (job: Job) => {
     setSelectedJob(job);
     try {
-      const res = await fetch(`/api/bids/job/${job.id}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setBids(data);
-      } else {
-        console.error('Bids error:', data.error);
-        setBids([]);
-      }
+      const { data, error } = await supabase
+        .from('bids')
+        .select('*, worker:users(name, picture)')
+        .eq('job_id', job.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedBids = (data || []).map(b => ({
+        ...b,
+        worker_name: (b as any).worker?.name,
+        worker_picture: (b as any).worker?.picture
+      }));
+
+      setBids(formattedBids);
     } catch (err) {
       console.error(err);
       setBids([]);
@@ -72,27 +70,27 @@ export default function HirerDashboard({ user }: { user: User }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data, error } = await supabase
+        .from('jobs')
+        .insert([{
           hirer_id: user.id,
           title,
           description,
           field,
           budget: parseFloat(budget),
           location,
-        }),
-      });
-      if (res.ok) {
-        const newJob = await res.json();
-        setJobs(prev => [newJob, ...prev]);
-        setShowPostModal(false);
-        setTitle('');
-        setDescription('');
-        setBudget('');
-        setLocation('');
-      }
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setJobs(prev => [data, ...prev]);
+      setShowPostModal(false);
+      setTitle('');
+      setDescription('');
+      setBudget('');
+      setLocation('');
     } catch (err) {
       console.error(err);
     } finally {
@@ -102,14 +100,13 @@ export default function HirerDashboard({ user }: { user: User }) {
 
   const handleBidStatus = async (bidId: number, status: 'accepted' | 'rejected') => {
     try {
-      const res = await fetch(`/api/bids/${bidId}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      if (res.ok) {
-        setBids(prev => prev.map(b => b.id === bidId ? { ...b, status } : b));
-      }
+      const { error } = await supabase
+        .from('bids')
+        .update({ status })
+        .eq('id', bidId);
+
+      if (error) throw error;
+      setBids(prev => prev.map(b => b.id === bidId ? { ...b, status } : b));
     } catch (err) {
       console.error(err);
     }
@@ -118,11 +115,14 @@ export default function HirerDashboard({ user }: { user: User }) {
   const handleDeleteJob = async (id: number) => {
     if (!confirm('Are you sure you want to delete this job?')) return;
     try {
-      const res = await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setJobs(prev => prev.filter(j => j.id !== id));
-        if (selectedJob?.id === id) setSelectedJob(null);
-      }
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: 'deleted' })
+        .eq('id', id);
+
+      if (error) throw error;
+      setJobs(prev => prev.filter(j => j.id !== id));
+      if (selectedJob?.id === id) setSelectedJob(null);
     } catch (err) {
       console.error(err);
     }
