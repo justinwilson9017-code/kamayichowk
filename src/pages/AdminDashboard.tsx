@@ -402,7 +402,7 @@ VALUES ('${adminEmail}', '${adminPassword}', 'Super Admin', 'admin', 1);`;
                     <div className="flex items-center gap-3 text-sm text-zinc-500">
                       <span>{job.hirer_name}</span>
                       <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-xs capitalize">{job.field}</span>
-                      <span className="font-bold text-emerald-500">${job.budget}</span>
+                      <span className="font-bold text-emerald-500">PKR {job.budget}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -568,7 +568,7 @@ VALUES ('${adminEmail}', '${adminPassword}', 'Super Admin', 'admin', 1);`;
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Budget ($)</label>
+                    <label className="text-sm font-medium">Budget (PKR)</label>
                     <input
                       type="number"
                       required

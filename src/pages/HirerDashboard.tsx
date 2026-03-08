@@ -204,7 +204,7 @@ export default function HirerDashboard({ user }: { user: User }) {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                        Budget: ${job.budget}
+                        Budget: PKR {job.budget}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
@@ -263,7 +263,7 @@ export default function HirerDashboard({ user }: { user: User }) {
                       </div>
                       <span className="font-bold text-sm">{bid.worker_name}</span>
                     </div>
-                    <span className="text-emerald-600 font-bold text-lg">${bid.amount}</span>
+                    <span className="text-emerald-600 font-bold text-lg">PKR {bid.amount}</span>
                   </div>
                   <p className="text-sm text-zinc-500 font-medium leading-relaxed">{bid.message}</p>
                   
@@ -366,7 +366,7 @@ export default function HirerDashboard({ user }: { user: User }) {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Budget ($)</label>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Budget (PKR)</label>
                     <input
                       type="number"
                       required

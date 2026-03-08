@@ -215,7 +215,7 @@ export default function WorkerDashboard({ user }: { user: User }) {
                       <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
                         <div className="flex items-center gap-1.5">
                           <DollarSign className="w-5 h-5 text-emerald-500" />
-                          <span className="font-bold text-xl">${job.budget}</span>
+                          <span className="font-bold text-xl">PKR {job.budget}</span>
                         </div>
                         <button
                           onClick={() => setSelectedJob(job)}
@@ -266,7 +266,7 @@ export default function WorkerDashboard({ user }: { user: User }) {
                       </div>
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-3 h-3" />
-                        Your Bid: ${bid.amount}
+                        Your Bid: PKR {bid.amount}
                       </div>
                     </div>
                   </div>
@@ -327,7 +327,7 @@ export default function WorkerDashboard({ user }: { user: User }) {
                   
                   <form onSubmit={handleBid} className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Your Quote ($)</label>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Your Quote (PKR)</label>
                       <div className="relative">
                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                         <input
