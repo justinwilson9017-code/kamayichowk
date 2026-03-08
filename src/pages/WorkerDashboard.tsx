@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2 } from 'lucide-react';
 
 export default function WorkerDashboard({ user }: { user: User }) {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -357,5 +357,3 @@ export default function WorkerDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-import { Trash2 } from 'lucide-react';

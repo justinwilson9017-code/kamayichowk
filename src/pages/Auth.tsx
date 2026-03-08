@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { User, Role } from '../types';
-import { Mail, Lock, User as UserIcon, Briefcase, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Briefcase, ArrowRight, MapPin } from 'lucide-react';
 
 export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
   const [searchParams] = useSearchParams();
@@ -210,5 +210,3 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
     </motion.div>
   );
 }
-
-import { MapPin } from 'lucide-react';

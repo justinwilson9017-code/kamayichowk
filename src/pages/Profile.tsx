@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User } from '../types';
 import { motion } from 'motion/react';
-import { User as UserIcon, Mail, Shield, Briefcase, CheckCircle } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Briefcase, CheckCircle, MapPin } from 'lucide-react';
 
 export default function Profile({ user, onUpdate }: { user: User, onUpdate: (user: User) => void }) {
   const [name, setName] = useState(user.name);
@@ -171,5 +171,3 @@ export default function Profile({ user, onUpdate }: { user: User, onUpdate: (use
     </div>
   );
 }
-
-import { MapPin } from 'lucide-react';
