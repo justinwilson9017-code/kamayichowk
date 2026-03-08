@@ -48,7 +48,8 @@ async function startServer() {
     if (!supabase) return res.status(500).json({ error: "Supabase not configured" });
 
     try {
-      const isAdmin = email === "justinwilson9017@gmail.com" ? 1 : 0;
+      const adminEmail = process.env.ADMIN_EMAIL || "justinwilson9017@gmail.com";
+      const isAdmin = email === adminEmail ? 1 : 0;
       const finalRole = isAdmin ? "admin" : role;
       
       const { data, error } = await supabase
@@ -77,8 +78,10 @@ async function startServer() {
     if (!supabase) return res.status(500).json({ error: "Supabase not configured" });
 
     try {
+      const adminEmail = process.env.ADMIN_EMAIL || "justinwilson9017@gmail.com";
+      const adminPassword = process.env.ADMIN_PASSWORD || "admin706";
       // Special case for the requested admin credentials
-      if (email === "justinwilson9017@gmail.com" && password === "admin706") {
+      if (email === adminEmail && password === adminPassword) {
         const { data: existingUser } = await supabase
           .from('users')
           .select('*')

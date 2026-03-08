@@ -198,6 +198,9 @@ export default function AdminDashboard({ user }: { user: User }) {
     setShowJobModal(true);
   };
 
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'justinwilson9017@gmail.com';
+  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin706';
+
   const sqlCode = `-- Database Schema for KamayiChowk (PostgreSQL / Supabase)
 -- Generated on: ${new Date().toISOString()}
 
@@ -247,7 +250,7 @@ alter publication supabase_realtime add table bids;
 
 -- 5. Insert Admin User
 INSERT INTO users (email, password, name, role, is_admin) 
-VALUES ('justinwilson9017@gmail.com', 'admin706', 'Super Admin', 'admin', 1);`;
+VALUES ('${adminEmail}', '${adminPassword}', 'Super Admin', 'admin', 1);`;
 
   if (!isSupabaseConfigured) {
     return (
@@ -455,7 +458,7 @@ VALUES ('justinwilson9017@gmail.com', 'admin706', 'Super Admin', 'admin', 1);`;
                   <button
                     onClick={() => handleDeleteUser(u.id)}
                     className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
-                    disabled={u.email === 'justinwilson9017@gmail.com'}
+                    disabled={u.email === adminEmail}
                   >
                     <UserX className="w-5 h-5" />
                   </button>

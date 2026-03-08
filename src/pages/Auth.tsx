@@ -29,12 +29,14 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
       return;
     }
 
-    const isAdmin = email === 'justinwilson9017@gmail.com' ? 1 : 0;
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'justinwilson9017@gmail.com';
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin706';
+    const isAdmin = email === adminEmail ? 1 : 0;
 
     try {
       if (isLogin) {
         // Special case for the requested admin credentials
-        if (email === 'justinwilson9017@gmail.com' && password === 'admin706') {
+        if (email === adminEmail && password === adminPassword) {
           const { data: existingUser, error: fetchError } = await supabase
             .from('users')
             .select('*')
@@ -207,9 +209,12 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
               <input
                 type="email"
+                id="user_email_login"
+                name="user_email_login"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
                 className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                 placeholder="you@example.com"
               />
@@ -222,9 +227,12 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
               <input
                 type="password"
+                id="user_password_login"
+                name="user_password_login"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                 placeholder="••••••••"
               />
@@ -248,16 +256,6 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
         </form>
 
         <div className="mt-10 text-center space-y-4">
-          <button
-            onClick={() => {
-              setEmail('justinwilson9017@gmail.com');
-              setPassword('admin706');
-              setIsLogin(true);
-            }}
-            className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 hover:text-emerald-500 transition-colors"
-          >
-            Use Test Admin Credentials
-          </button>
           <div className="h-px bg-zinc-100 dark:bg-zinc-800 w-full" />
           <button
             onClick={() => setIsLogin(!isLogin)}
