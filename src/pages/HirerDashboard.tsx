@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Briefcase, Users, DollarSign, Clock, Trash2, ChevronRight, CheckCircle, MapPin, User as UserIcon } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { Plus, Briefcase, Users, DollarSign, Clock, Trash2, ChevronRight, CheckCircle, MapPin, User as UserIcon, AlertCircle } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 export default function HirerDashboard({ user }: { user: User }) {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -24,6 +24,10 @@ export default function HirerDashboard({ user }: { user: User }) {
   }, []);
 
   const fetchJobs = async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -34,8 +38,11 @@ export default function HirerDashboard({ user }: { user: User }) {
 
       if (error) throw error;
       setJobs(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      if (err.message === 'Failed to fetch') {
+        // Handle fetch error silently or show a toast
+      }
       setJobs([]);
     } finally {
       setLoading(false);
@@ -127,6 +134,19 @@ export default function HirerDashboard({ user }: { user: User }) {
       console.error(err);
     }
   };
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-6" />
+        <h1 className="text-3xl font-bold mb-4">Supabase Configuration Required</h1>
+        <p className="text-zinc-500 mb-8">
+          Please add <code className="bg-zinc-100 px-2 py-1 rounded">SUPABASE_URL</code> and 
+          <code className="bg-zinc-100 px-2 py-1 rounded ml-2">SUPABASE_ANON_KEY</code> to your project secrets to enable the dashboard.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

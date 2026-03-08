@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2 } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 export default function WorkerDashboard({ user }: { user: User }) {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -21,6 +21,10 @@ export default function WorkerDashboard({ user }: { user: User }) {
   }, [user.field, user.id]);
 
   const fetchJobs = async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -37,8 +41,11 @@ export default function WorkerDashboard({ user }: { user: User }) {
       }));
 
       setJobs(formattedJobs);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      if (err.message === 'Failed to fetch') {
+        // Handle fetch error
+      }
       setJobs([]);
     } finally {
       setLoading(false);
@@ -113,6 +120,19 @@ export default function WorkerDashboard({ user }: { user: User }) {
       console.error(err);
     }
   };
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-6" />
+        <h1 className="text-3xl font-bold mb-4">Supabase Configuration Required</h1>
+        <p className="text-zinc-500 mb-8">
+          Please add <code className="bg-zinc-100 px-2 py-1 rounded">SUPABASE_URL</code> and 
+          <code className="bg-zinc-100 px-2 py-1 rounded ml-2">SUPABASE_ANON_KEY</code> to your project secrets to enable the dashboard.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

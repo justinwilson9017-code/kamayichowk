@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { User, Role } from '../types';
-import { Mail, Lock, User as UserIcon, Briefcase, ArrowRight, MapPin } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { Mail, Lock, User as UserIcon, Briefcase, ArrowRight, MapPin, AlertTriangle } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
   const [searchParams] = useSearchParams();
@@ -22,6 +22,12 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    if (!isSupabaseConfigured) {
+      setError('Supabase is not configured. Please add SUPABASE_URL and SUPABASE_ANON_KEY to your Secrets.');
+      setLoading(false);
+      return;
+    }
 
     const isAdmin = email === 'justinwilson9017@gmail.com' ? 1 : 0;
 
@@ -88,7 +94,11 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
       
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === 'Failed to fetch') {
+        setError('Connection error: Could not reach Supabase. Please check your SUPABASE_URL and internet connection.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

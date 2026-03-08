@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { User, Job } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Briefcase, MessageSquare, TrendingUp, Trash2, Shield, UserX, CheckCircle, XCircle, Plus, Edit, Database, Terminal, Copy } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { Users, Briefcase, MessageSquare, TrendingUp, Trash2, Shield, UserX, CheckCircle, XCircle, Plus, Edit, Database, Terminal, Copy, AlertCircle } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 export default function AdminDashboard({ user }: { user: User }) {
   const [stats, setStats] = useState<any>(null);
@@ -28,6 +28,7 @@ export default function AdminDashboard({ user }: { user: User }) {
   }, []);
 
   const fetchStats = async () => {
+    if (!isSupabaseConfigured) return;
     try {
       const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
       const { count: totalJobs } = await supabase.from('jobs').select('*', { count: 'exact', head: true });
@@ -65,6 +66,10 @@ export default function AdminDashboard({ user }: { user: User }) {
   };
 
   const fetchJobs = async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -91,6 +96,7 @@ export default function AdminDashboard({ user }: { user: User }) {
   };
 
   const fetchUsers = async () => {
+    if (!isSupabaseConfigured) return;
     try {
       const { data, error } = await supabase
         .from('users')
@@ -242,6 +248,19 @@ alter publication supabase_realtime add table bids;
 -- 5. Insert Admin User
 INSERT INTO users (email, password, name, role, is_admin) 
 VALUES ('justinwilson9017@gmail.com', 'admin706', 'Super Admin', 'admin', 1);`;
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-6" />
+        <h1 className="text-3xl font-bold mb-4">Supabase Configuration Required</h1>
+        <p className="text-zinc-500 mb-8">
+          Please add <code className="bg-zinc-100 px-2 py-1 rounded">SUPABASE_URL</code> and 
+          <code className="bg-zinc-100 px-2 py-1 rounded ml-2">SUPABASE_ANON_KEY</code> to your project secrets to enable the dashboard.
+        </p>
+      </div>
+    );
+  }
 
   if (!stats) return <div className="p-8 flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
