@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { User, Job } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Briefcase, MessageSquare, TrendingUp, Trash2, Shield, UserX, CheckCircle, XCircle, Plus, Edit, Database, Terminal, Copy, AlertCircle } from 'lucide-react';
+import { Users, Briefcase, MessageSquare, TrendingUp, Trash2, Shield, UserX, CheckCircle, XCircle, Plus, Edit, Database, Terminal, Copy, AlertCircle, LogOut } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 
-export default function AdminDashboard({ user }: { user: User }) {
+export default function AdminDashboard({ user, onLogout }: { user: User, onLogout: () => void }) {
   const [stats, setStats] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -281,7 +281,15 @@ VALUES ('${adminEmail}', '${adminPassword}', 'Super Admin', 'admin', 1);`;
             <p className="text-zinc-500">Real-time platform overview and management</p>
           </div>
         </div>
-        <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+        <div className="flex flex-wrap items-center gap-4">
+          <button 
+            onClick={onLogout}
+            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-600 rounded-xl text-sm font-bold hover:bg-red-500 hover:text-white transition-all uppercase tracking-wider"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
           {[
             { id: 'overview', icon: TrendingUp, label: 'Overview' },
             { id: 'jobs', icon: Briefcase, label: 'Jobs' },
@@ -297,6 +305,7 @@ VALUES ('${adminEmail}', '${adminPassword}', 'Super Admin', 'admin', 1);`;
               {tab.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

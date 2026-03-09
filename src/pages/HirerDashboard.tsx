@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Briefcase, Users, DollarSign, Clock, Trash2, ChevronRight, CheckCircle, MapPin, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Plus, Briefcase, Users, DollarSign, Clock, Trash2, ChevronRight, CheckCircle, MapPin, User as UserIcon, AlertCircle, LogOut } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 
-export default function HirerDashboard({ user }: { user: User }) {
+export default function HirerDashboard({ user, onLogout }: { user: User, onLogout: () => void }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPostModal, setShowPostModal] = useState(false);
@@ -155,14 +155,23 @@ export default function HirerDashboard({ user }: { user: User }) {
           <h1 className="text-3xl font-bold">Hirer Console</h1>
           <p className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">Manage your projects and talent</p>
         </div>
-        <button
-          onClick={() => setShowPostModal(true)}
-          className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-2xl flex items-center gap-2 transition-all shadow-xl shadow-emerald-500/20 uppercase tracking-wider text-sm"
-        >
+        <div className="flex flex-wrap items-center gap-4">
+          <button 
+            onClick={onLogout}
+            className="px-8 py-4 bg-red-500/10 text-red-600 font-semibold rounded-2xl flex items-center gap-2 transition-all uppercase tracking-wider text-sm hover:bg-red-500 hover:text-white"
+          >
+            <LogOut className="w-5 h-5" />
+            Logout
+          </button>
+          <button
+            onClick={() => setShowPostModal(true)}
+            className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-2xl flex items-center gap-2 transition-all shadow-xl shadow-emerald-500/20 uppercase tracking-wider text-sm"
+          >
           <Plus className="w-5 h-5" />
           Post New Project
         </button>
       </div>
+    </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Jobs List */}

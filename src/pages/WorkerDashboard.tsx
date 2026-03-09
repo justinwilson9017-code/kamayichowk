@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2, AlertCircle, LogOut } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 
-export default function WorkerDashboard({ user }: { user: User }) {
+export default function WorkerDashboard({ user, onLogout }: { user: User, onLogout: () => void }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myBids, setMyBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,7 +144,15 @@ export default function WorkerDashboard({ user }: { user: User }) {
           </p>
         </div>
         
-        <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-wrap items-center gap-4">
+          <button 
+            onClick={onLogout}
+            className="px-6 py-2.5 bg-red-500/10 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-500 hover:text-white transition-all uppercase tracking-wider flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+          <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
           <button
             onClick={() => setActiveTab('available')}
             className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
@@ -167,6 +175,7 @@ export default function WorkerDashboard({ user }: { user: User }) {
           </button>
         </div>
       </div>
+    </div>
 
       {activeTab === 'available' ? (
         <>

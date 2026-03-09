@@ -1,16 +1,35 @@
 import { useState } from 'react';
 import { User } from '../types';
 import { motion } from 'motion/react';
-import { User as UserIcon, Mail, Shield, Briefcase, CheckCircle, MapPin } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Briefcase, CheckCircle, MapPin, Camera, Loader2, LogOut } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
-export default function Profile({ user, onUpdate }: { user: User, onUpdate: (user: User) => void }) {
+export default function Profile({ user, onUpdate, onLogout }: { user: User, onUpdate: (user: User) => void, onLogout: () => void }) {
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [location, setLocation] = useState(user.location || '');
   const [picture, setPicture] = useState(user.picture || '');
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPicture(reader.result as string);
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error reading file:', err);
+      setUploading(false);
+    }
+  };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,13 +58,25 @@ export default function Profile({ user, onUpdate }: { user: User, onUpdate: (use
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] overflow-hidden shadow-2xl">
         <div className="h-48 bg-emerald-500 relative">
-          <div className="absolute -bottom-16 left-12 w-32 h-32 bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-2xl">
-            <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 rounded-[1.75rem] flex items-center justify-center overflow-hidden">
+          <div className="absolute -bottom-16 left-12 w-32 h-32 bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-2xl group">
+            <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 rounded-[1.75rem] flex items-center justify-center overflow-hidden relative">
               {picture ? (
                 <img src={picture} alt={name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <UserIcon className="w-16 h-16 text-zinc-400" />
               )}
+              
+              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white text-[10px] font-bold uppercase tracking-wider gap-1">
+                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                {uploading ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : (
+                  <>
+                    <Camera className="w-6 h-6" />
+                    Change
+                  </>
+                )}
+              </label>
             </div>
           </div>
         </div>
@@ -147,9 +178,16 @@ export default function Profile({ user, onUpdate }: { user: User, onUpdate: (use
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Member Since</span>
                   <span className="font-semibold text-sm">March 2024</span>
                 </div>
-                <div className="pt-4">
+                <div className="pt-4 space-y-3">
                   <button className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-500 dark:hover:text-white transition-all uppercase tracking-wider text-xs">
                     Upgrade to Pro
+                  </button>
+                  <button 
+                    onClick={onLogout}
+                    className="w-full py-4 bg-red-500/10 text-red-600 font-semibold rounded-2xl hover:bg-red-500 hover:text-white transition-all uppercase tracking-wider text-xs flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
                   </button>
                 </div>
               </div>

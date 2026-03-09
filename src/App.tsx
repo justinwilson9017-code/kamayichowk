@@ -50,9 +50,9 @@ export default function App() {
               <Route 
                 path="/dashboard" 
                 element={
-                  user?.role === 'worker' ? <WorkerDashboard user={user} /> :
-                  user?.role === 'hirer' ? <HirerDashboard user={user} /> :
-                  user?.role === 'admin' ? <AdminDashboard user={user} /> :
+                  user?.role === 'worker' ? <WorkerDashboard user={user} onLogout={handleLogout} /> :
+                  user?.role === 'hirer' ? <HirerDashboard user={user} onLogout={handleLogout} /> :
+                  user?.role === 'admin' ? <AdminDashboard user={user} onLogout={handleLogout} /> :
                   <Navigate to="/auth" />
                 } 
               />
@@ -60,13 +60,13 @@ export default function App() {
               <Route 
                 path="/admin" 
                 element={
-                  user?.isAdmin ? <AdminDashboard user={user} /> : <Navigate to="/" />
+                  user?.isAdmin ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />
                 } 
               />
               
               <Route 
                 path="/profile" 
-                element={user ? <Profile user={user} onUpdate={handleLogin} /> : <Navigate to="/auth" />} 
+                element={user ? <Profile user={user} onUpdate={handleLogin} onLogout={handleLogout} /> : <Navigate to="/auth" />} 
               />
 
               <Route path="*" element={<Navigate to="/" />} />
