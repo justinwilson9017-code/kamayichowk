@@ -1,24 +1,50 @@
 import { useState, useEffect } from 'react';
 import { User, Job, Bid } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2, AlertCircle, LogOut } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, Clock, Send, CheckCircle, Trash2, AlertCircle, LogOut, Star, User as UserIcon } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
+import { notificationService } from '../services/notificationService';
+import { Review } from '../types';
 
 export default function WorkerDashboard({ user, onLogout }: { user: User, onLogout: () => void }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myBids, setMyBids] = useState<Bid[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [bidAmount, setBidAmount] = useState('');
   const [bidMessage, setBidMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'available' | 'my-bids'>('available');
+  const [activeTab, setActiveTab] = useState<'available' | 'my-bids' | 'reviews'>('available');
 
   useEffect(() => {
     fetchJobs();
     fetchMyBids();
+    fetchReviews();
   }, [user.field, user.id]);
+
+  const fetchReviews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*, hirer:users(name, picture)')
+        .eq('worker_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedReviews = (data || []).map(r => ({
+        ...r,
+        hirer_name: (r as any).hirer?.name,
+        hirer_picture: (r as any).hirer?.picture
+      }));
+
+      setReviews(formattedReviews);
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+    }
+  };
 
   const fetchJobs = async () => {
     if (!isSupabaseConfigured) {
@@ -91,6 +117,15 @@ export default function WorkerDashboard({ user, onLogout }: { user: User, onLogo
 
       if (error) throw error;
 
+      // Notify the hirer
+      await notificationService.send({
+        user_id: selectedJob.hirer_id,
+        title: 'New Bid Received',
+        message: `${user.name} placed a bid of PKR ${bidAmount} on your job: ${selectedJob.title}`,
+        type: 'bid_new',
+        link: '/dashboard'
+      });
+
       setSuccess(true);
       fetchMyBids();
       setTimeout(() => {
@@ -135,64 +170,91 @@ export default function WorkerDashboard({ user, onLogout }: { user: User, onLogo
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
-        <div>
-          <h1 className="text-3xl font-bold">Worker Dashboard</h1>
-          <p className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
-            Expertise: <span className="text-emerald-500">{user.field}</span>
-          </p>
+    <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 sm:mb-12 gap-6">
+        <div className="flex items-center gap-4 sm:gap-6 w-full md:w-auto">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-zinc-100 dark:bg-zinc-800 rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-center overflow-hidden border-4 border-white dark:border-zinc-900 shadow-xl">
+            {user.picture ? (
+              <img src={user.picture} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 text-zinc-300" />
+            )}
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold">{user.name}</h1>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                {user.field}
+              </span>
+              {reviews.length > 0 && (
+                <div className="flex items-center gap-1 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  <Star className="w-3 h-3 fill-current" />
+                  {(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)} ({reviews.length})
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-4">
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
           <button 
             onClick={onLogout}
-            className="px-6 py-2.5 bg-red-500/10 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-500 hover:text-white transition-all uppercase tracking-wider flex items-center gap-2"
+            className="px-6 py-3 sm:py-4 bg-red-500/10 text-red-600 font-semibold rounded-2xl flex items-center justify-center gap-2 transition-all uppercase tracking-wider text-xs sm:text-sm hover:bg-red-500 hover:text-white"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             Logout
           </button>
-          <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-          <button
-            onClick={() => setActiveTab('available')}
-            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'available' 
-                ? 'bg-white dark:bg-zinc-800 shadow-sm text-emerald-500' 
-                : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
-            }`}
-          >
-            Available Jobs
-          </button>
-          <button
-            onClick={() => setActiveTab('my-bids')}
-            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'my-bids' 
-                ? 'bg-white dark:bg-zinc-800 shadow-sm text-emerald-500' 
-                : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
-            }`}
-          >
-            My Bids
-          </button>
+          <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setActiveTab('available')}
+              className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                activeTab === 'available' 
+                  ? 'bg-white dark:bg-zinc-800 shadow-sm text-emerald-500' 
+                  : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+              }`}
+            >
+              Jobs
+            </button>
+            <button
+              onClick={() => setActiveTab('my-bids')}
+              className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                activeTab === 'my-bids' 
+                  ? 'bg-white dark:bg-zinc-800 shadow-sm text-emerald-500' 
+                  : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+              }`}
+            >
+              Bids
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                activeTab === 'reviews' 
+                  ? 'bg-white dark:bg-zinc-800 shadow-sm text-emerald-500' 
+                  : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+              }`}
+            >
+              Reviews
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
       {activeTab === 'available' ? (
         <>
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {[1, 2, 3].map(i => (
                 <div key={i} className="h-64 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-[2rem]" />
               ))}
             </div>
           ) : jobs.length === 0 ? (
-            <div className="text-center py-24 bg-zinc-50 dark:bg-zinc-900/50 rounded-[3rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-              <Briefcase className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
-              <h3 className="text-xl font-bold">No jobs found</h3>
-              <p className="text-zinc-500">Check back later for new opportunities in {user.field}.</p>
+            <div className="text-center py-16 sm:py-24 bg-zinc-50 dark:bg-zinc-900/50 rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+              <Briefcase className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-300 mx-auto mb-4" />
+              <h3 className="text-lg sm:text-xl font-bold">No jobs found</h3>
+              <p className="text-sm text-zinc-500">Check back later for new opportunities in {user.field}.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <AnimatePresence mode="popLayout">
                 {jobs.map((job) => (
                   <motion.div
@@ -201,34 +263,34 @@ export default function WorkerDashboard({ user, onLogout }: { user: User, onLogo
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 hover:border-emerald-500 transition-all group shadow-sm hover:shadow-xl hover:shadow-emerald-500/5"
+                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] sm:rounded-[2rem] p-6 sm:p-8 hover:border-emerald-500 transition-all group shadow-sm hover:shadow-xl hover:shadow-emerald-500/5"
                   >
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-start">
+                    <div className="space-y-4 sm:space-y-6">
+                      <div className="flex justify-between items-start gap-3">
                         <div className="space-y-1">
-                          <h3 className="text-xl font-bold group-hover:text-emerald-500 transition-colors">{job.title}</h3>
-                          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                          <h3 className="text-lg sm:text-xl font-bold group-hover:text-emerald-500 transition-colors line-clamp-1">{job.title}</h3>
+                          <div className="flex items-center gap-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
                             <MapPin className="w-3 h-3" />
                             {job.location || 'Remote'}
                           </div>
                         </div>
-                        <span className="bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider">
+                        <span className="shrink-0 bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider">
                           {job.field}
                         </span>
                       </div>
                       
-                      <p className="text-zinc-500 dark:text-zinc-400 line-clamp-3 text-sm leading-relaxed font-medium">
+                      <p className="text-zinc-500 dark:text-zinc-400 line-clamp-3 text-xs sm:text-sm leading-relaxed font-medium">
                         {job.description}
                       </p>
                       
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800 gap-4">
                         <div className="flex items-center gap-1.5">
-                          <DollarSign className="w-5 h-5 text-emerald-500" />
-                          <span className="font-bold text-xl">PKR {job.budget}</span>
+                          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
+                          <span className="font-bold text-lg sm:text-xl">PKR {job.budget}</span>
                         </div>
                         <button
                           onClick={() => setSelectedJob(job)}
-                          className="px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-xs rounded-xl hover:bg-emerald-500 dark:hover:bg-emerald-500 dark:hover:text-white transition-all uppercase tracking-wider"
+                          className="w-full sm:w-auto px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-[10px] sm:text-xs rounded-xl hover:bg-emerald-500 dark:hover:bg-emerald-500 dark:hover:text-white transition-all uppercase tracking-wider"
                         >
                           Place Bid
                         </button>
@@ -240,7 +302,7 @@ export default function WorkerDashboard({ user, onLogout }: { user: User, onLogo
             </div>
           )}
         </>
-      ) : (
+      ) : activeTab === 'my-bids' ? (
         <div className="space-y-4">
           {myBids.length === 0 ? (
             <div className="text-center py-24 bg-zinc-50 dark:bg-zinc-900/50 rounded-[3rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800">
@@ -288,6 +350,60 @@ export default function WorkerDashboard({ user, onLogout }: { user: User, onLogo
                       <Trash2 className="w-4 h-4" />
                       Retract Bid
                     </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {reviews.length === 0 ? (
+            <div className="text-center py-24 bg-zinc-50 dark:bg-zinc-900/50 rounded-[3rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+              <Star className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold">No reviews yet</h3>
+              <p className="text-zinc-500">Complete jobs to start receiving reviews from hirers.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {reviews.map((review) => (
+                <motion.div
+                  key={review.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm relative overflow-hidden group"
+                >
+                  <div className="absolute top-0 right-0 p-8">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star} 
+                          className={`w-4 h-4 ${star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-zinc-200 dark:text-zinc-800'}`} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden">
+                        {review.hirer_picture ? (
+                          <img src={review.hirer_picture} alt={review.hirer_name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="text-zinc-400 font-bold text-lg">{(review.hirer_name || 'H')[0]}</div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-zinc-900 dark:text-white">{review.hirer_name}</h4>
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed italic">
+                      "{review.comment}"
+                    </p>
                   </div>
                 </motion.div>
               ))}

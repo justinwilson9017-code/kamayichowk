@@ -3,6 +3,7 @@ import { User, Job } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Briefcase, MessageSquare, TrendingUp, Trash2, Shield, UserX, CheckCircle, XCircle, Plus, Edit, Database, Terminal, Copy, AlertCircle, LogOut } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
+import { notificationService } from '../services/notificationService';
 
 export default function AdminDashboard({ user, onLogout }: { user: User, onLogout: () => void }) {
   const [stats, setStats] = useState<any>(null);
@@ -169,6 +170,25 @@ export default function AdminDashboard({ user, onLogout }: { user: User, onLogou
             budget: parseFloat(jobBudget),
           }]);
         if (error) throw error;
+
+        // Notify workers in this field
+        const { data: workers } = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'worker')
+          .eq('field', jobField);
+        
+        if (workers) {
+          for (const worker of workers) {
+            await notificationService.send({
+              user_id: worker.id,
+              title: 'New Job in Your Field',
+              message: `A new ${jobField} job has been posted by Admin: ${jobTitle}`,
+              type: 'job_new',
+              link: '/dashboard'
+            });
+          }
+        }
       }
       
       fetchJobs();
@@ -242,13 +262,38 @@ CREATE TABLE bids (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Enable Realtime (Supabase Specific)
+-- 4. Notifications Table
+CREATE TABLE notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT NOT NULL, -- 'job_new', 'bid_update', 'bid_new', 'review_request', 'message'
+  link TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Reviews Table
+CREATE TABLE reviews (
+  id SERIAL PRIMARY KEY,
+  job_id INTEGER NOT NULL REFERENCES jobs(id),
+  hirer_id INTEGER NOT NULL REFERENCES users(id),
+  worker_id INTEGER NOT NULL REFERENCES users(id),
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Enable Realtime (Supabase Specific)
 -- Run this to enable real-time for these tables
 alter publication supabase_realtime add table users;
 alter publication supabase_realtime add table jobs;
 alter publication supabase_realtime add table bids;
+alter publication supabase_realtime add table notifications;
+alter publication supabase_realtime add table reviews;
 
--- 5. Insert Admin User
+-- 7. Insert Admin User
 INSERT INTO users (email, password, name, role, is_admin) 
 VALUES ('${adminEmail}', '${adminPassword}', 'Super Admin', 'admin', 1);`;
 

@@ -111,43 +111,43 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-md mx-auto px-4 py-12"
+      className="max-w-md mx-auto px-4 py-8 sm:py-12"
     >
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-10 shadow-2xl">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold mb-2">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl">
+        <div className="text-center mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">
             {isLogin ? 'Welcome Back' : 'Join KamayiChowk'}
           </h2>
-          <p className="text-sm text-zinc-500">
+          <p className="text-xs sm:text-sm text-zinc-500">
             {isLogin ? 'Enter your credentials to continue' : 'Start your journey today'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           {!isLogin && (
             <>
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Full Name</label>
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Full Name</label>
                 <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
                     placeholder="John Doe"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">I am here to</label>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">I am here to</label>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setRole('worker')}
-                    className={`py-3 rounded-2xl border-2 font-semibold transition-all ${
+                    className={`py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 font-semibold transition-all text-xs sm:text-sm ${
                       role === 'worker' 
                         ? 'bg-emerald-500 border-emerald-500 text-white' 
                         : 'border-zinc-100 dark:border-zinc-800 hover:border-emerald-500/50'
@@ -158,7 +158,7 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
                   <button
                     type="button"
                     onClick={() => setRole('hirer')}
-                    className={`py-3 rounded-2xl border-2 font-semibold transition-all ${
+                    className={`py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 font-semibold transition-all text-xs sm:text-sm ${
                       role === 'hirer' 
                         ? 'bg-emerald-500 border-emerald-500 text-white' 
                         : 'border-zinc-100 dark:border-zinc-800 hover:border-emerald-500/50'
@@ -169,28 +169,28 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Location</label>
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Location</label>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
                   <input
                     type="text"
                     required
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
                     placeholder="e.g. New York, NY"
                   />
                 </div>
               </div>
 
               {role === 'worker' && (
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Expertise</label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Expertise</label>
                   <select
                     value={field}
                     onChange={(e) => setField(e.target.value)}
-                    className="w-full px-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-semibold"
+                    className="w-full px-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-semibold text-sm sm:text-base"
                   >
                     <option value="labor">Labor</option>
                     <option value="electrician">Electrician</option>
@@ -203,10 +203,10 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
             </>
           )}
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Email Address</label>
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
               <input
                 type="email"
                 id="user_email_login"
@@ -215,16 +215,16 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="off"
-                className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
                 placeholder="you@example.com"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Password</label>
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Password</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
               <input
                 type="password"
                 id="user_password_login"
@@ -233,14 +233,14 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
           {error && (
-            <p className="text-sm font-semibold text-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-100 dark:border-red-900/30">
+            <p className="text-xs sm:text-sm font-semibold text-red-500 bg-red-50 dark:bg-red-900/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-100 dark:border-red-900/30">
               {error}
             </p>
           )}
@@ -248,18 +248,18 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25"
+            className="w-full py-4 sm:py-5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 text-sm sm:text-base"
           >
             {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
-            {!loading && <ArrowRight className="w-5 h-5" />}
+            {!loading && <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
         </form>
 
-        <div className="mt-10 text-center space-y-4">
+        <div className="mt-8 sm:mt-10 text-center space-y-4">
           <div className="h-px bg-zinc-100 dark:bg-zinc-800 w-full" />
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-xs font-semibold text-zinc-500 hover:text-emerald-500 transition-colors uppercase tracking-wider"
+            className="text-[10px] sm:text-xs font-semibold text-zinc-500 hover:text-emerald-500 transition-colors uppercase tracking-wider"
           >
             {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>

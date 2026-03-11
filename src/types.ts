@@ -44,3 +44,26 @@ export interface Bid {
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
 }
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  title: string;
+  message: string;
+  type: 'job_new' | 'bid_update' | 'bid_new' | 'review_request' | 'message';
+  link?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface Review {
+  id: number;
+  job_id: number;
+  hirer_id: number;
+  worker_id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  hirer_name?: string;
+  hirer_picture?: string;
+}
