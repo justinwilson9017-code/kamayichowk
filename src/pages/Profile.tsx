@@ -7,8 +7,10 @@ import { supabase } from '../services/supabase';
 export default function Profile({ user, onUpdate, onLogout }: { user: User, onUpdate: (user: User) => void, onLogout: () => void }) {
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
+  const [phone, setPhone] = useState(user.phone || '');
   const [location, setLocation] = useState(user.location || '');
   const [picture, setPicture] = useState(user.picture || '');
+  const [hourlyRate, setHourlyRate] = useState(user.hourly_rate || 0);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -37,7 +39,7 @@ export default function Profile({ user, onUpdate, onLogout }: { user: User, onUp
     try {
       const { data, error } = await supabase
         .from('users')
-        .update({ name, email, location, picture })
+        .update({ name, email, phone, location, picture, hourly_rate: hourlyRate })
         .eq('id', user.id)
         .select()
         .single();
@@ -81,28 +83,28 @@ export default function Profile({ user, onUpdate, onLogout }: { user: User, onUp
           </div>
         </div>
 
-        <div className="pt-16 sm:pt-24 pb-8 sm:pb-12 px-6 sm:px-12 space-y-8 sm:space-y-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="space-y-1 sm:space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold">{user.name}</h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <p className="text-[10px] sm:text-sm font-semibold text-zinc-500 flex items-center gap-2 uppercase tracking-wider">
-                  <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+        <div className="pt-14 sm:pt-24 pb-8 sm:pb-12 px-5 sm:px-12 space-y-6 sm:space-y-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
+            <div className="space-y-1 sm:space-y-2 w-full">
+              <h1 className="text-xl sm:text-3xl font-bold truncate">{user.name}</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                <p className="text-[9px] sm:text-sm font-bold text-zinc-500 flex items-center gap-2 uppercase tracking-wider truncate">
+                  <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" />
                   {user.email}
                 </p>
-                <p className="text-[10px] sm:text-sm font-semibold text-zinc-500 flex items-center gap-2 uppercase tracking-wider">
-                  <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                <p className="text-[9px] sm:text-sm font-bold text-zinc-500 flex items-center gap-2 uppercase tracking-wider truncate">
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" />
                   {user.location || 'No location set'}
                 </p>
               </div>
             </div>
             <div className="flex gap-2 sm:gap-3">
-              <span className="px-3 sm:px-5 py-1.5 sm:py-2 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+              <span className="px-3 sm:px-5 py-1 sm:py-2 bg-emerald-500/10 text-emerald-600 rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider">
                 {user.role}
               </span>
               {user.isAdmin && (
-                <span className="px-3 sm:px-5 py-1.5 sm:py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 uppercase tracking-wider">
-                  <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="px-3 sm:px-5 py-1 sm:py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full text-[9px] sm:text-xs font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                  <Shield className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
                   Admin
                 </span>
               )}
@@ -111,58 +113,82 @@ export default function Profile({ user, onUpdate, onLogout }: { user: User, onUp
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 sm:gap-12">
             <div className="lg:col-span-3 space-y-6 sm:space-y-8">
-              <h3 className="text-xl sm:text-2xl font-bold">Edit Profile</h3>
+              <h3 className="text-lg sm:text-2xl font-bold">Edit Profile</h3>
               <form onSubmit={handleUpdate} className="space-y-4 sm:space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Full Name</label>
+                  <div className="space-y-1 sm:space-y-2">
+                    <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Full Name</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-sm sm:text-base"
+                      className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-xs sm:text-base"
                     />
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Email Address</label>
+                  <div className="space-y-1 sm:space-y-2">
+                    <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Email Address</label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-sm sm:text-base"
+                      className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-xs sm:text-base"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Location</label>
+                <div className="space-y-1 sm:space-y-2">
+                  <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-xs sm:text-base"
+                    placeholder="e.g. +92 300 1234567"
+                  />
+                </div>
+
+                <div className="space-y-1 sm:space-y-2">
+                  <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Location</label>
                   <input
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-sm sm:text-base"
+                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-xs sm:text-base"
                     placeholder="e.g. London, UK"
                   />
                 </div>
 
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Profile Picture URL</label>
+                <div className="space-y-1 sm:space-y-2">
+                  <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Profile Picture URL</label>
                   <input
                     type="text"
                     value={picture}
                     onChange={(e) => setPicture(e.target.value)}
-                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-sm sm:text-base"
+                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-xs sm:text-base"
                     placeholder="https://images.unsplash.com/..."
                   />
                 </div>
 
+                {user.role === 'worker' && (
+                  <div className="space-y-1 sm:space-y-2">
+                    <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Hourly Rate (PKR)</label>
+                    <input
+                      type="number"
+                      value={hourlyRate}
+                      onChange={(e) => setHourlyRate(Number(e.target.value))}
+                      className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-xs sm:text-base"
+                      placeholder="e.g. 500"
+                    />
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 sm:py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 uppercase tracking-wider text-xs sm:text-sm"
+                  className="w-full py-3.5 sm:py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 uppercase tracking-wider text-[10px] sm:text-sm"
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
-                  {success && <CheckCircle className="w-5 h-5" />}
+                  {success && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </button>
               </form>
             </div>
@@ -170,6 +196,15 @@ export default function Profile({ user, onUpdate, onLogout }: { user: User, onUp
             <div className="lg:col-span-2 space-y-6 sm:space-y-8">
               <h3 className="text-xl sm:text-2xl font-bold">Membership</h3>
               <div className="p-6 sm:p-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-[1.5rem] sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 space-y-4 sm:space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Live Status</span>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${user.is_online ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${user.is_online ? 'text-emerald-500' : 'text-zinc-500'}`}>
+                      {user.is_online ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Status</span>
                   <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-semibold uppercase tracking-wider">Free Tier</span>

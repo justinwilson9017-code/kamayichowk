@@ -11,7 +11,7 @@ export const notificationService = {
     user_id: number;
     title: string;
     message: string;
-    type: 'job_new' | 'bid_update' | 'bid_new' | 'review_request' | 'message';
+    type: 'job_new' | 'bid_update' | 'bid_new' | 'review_request' | 'message' | 'bid_accepted' | 'bid_rejected';
     link?: string;
   }) {
     try {

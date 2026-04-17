@@ -147,7 +147,7 @@ async function startServer() {
     try {
       let query = supabase
         .from('jobs')
-        .select('*, hirer:users(name)')
+        .select('*, hirer:users!jobs_hirer_id_fkey(name)')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 

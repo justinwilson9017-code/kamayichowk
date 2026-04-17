@@ -5,11 +5,13 @@ import { supabase } from '../services/supabase';
 import { notificationService } from '../services/notificationService';
 import { Notification, User } from '../types';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../LanguageContext';
 
 export default function NotificationDropdown({ user }: { user: User }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchNotifications();
@@ -81,9 +83,9 @@ export default function NotificationDropdown({ user }: { user: User }) {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 60) return t('notifications.justNow');
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}${t('notifications.minutesAgo')}`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}${t('notifications.hoursAgo')}`;
     return date.toLocaleDateString();
   };
 
@@ -112,16 +114,16 @@ export default function NotificationDropdown({ user }: { user: User }) {
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute right-0 mt-2 w-80 md:w-96 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl z-50 overflow-hidden"
+              className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl z-50 overflow-hidden"
             >
               <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-800/50">
-                <h3 className="font-bold">Notifications</h3>
+                <h3 className="font-bold">{t('notifications.title')}</h3>
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
                     className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-600 transition-colors"
                   >
-                    Mark all as read
+                    {t('notifications.markAllRead')}
                   </button>
                 )}
               </div>
@@ -132,7 +134,7 @@ export default function NotificationDropdown({ user }: { user: User }) {
                     <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto">
                       <Bell className="w-6 h-6 text-zinc-400" />
                     </div>
-                    <p className="text-sm text-zinc-500 font-medium">No notifications yet</p>
+                    <p className="text-sm text-zinc-500 font-medium">{t('notifications.noNotifications')}</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -173,7 +175,7 @@ export default function NotificationDropdown({ user }: { user: User }) {
                                   }}
                                   className="text-[10px] font-bold text-emerald-500 hover:text-emerald-600 uppercase tracking-wider flex items-center gap-1"
                                 >
-                                  View <ExternalLink className="w-3 h-3" />
+                                  {t('notifications.view')} <ExternalLink className="w-3 h-3" />
                                 </Link>
                               )}
                               {!n.is_read && (
@@ -181,14 +183,14 @@ export default function NotificationDropdown({ user }: { user: User }) {
                                   onClick={() => handleMarkAsRead(n.id)}
                                   className="text-[10px] font-bold text-zinc-400 hover:text-emerald-500 uppercase tracking-wider flex items-center gap-1"
                                 >
-                                  Read <Check className="w-3 h-3" />
+                                  {t('notifications.read')} <Check className="w-3 h-3" />
                                 </button>
                               )}
                               <button
                                 onClick={() => handleDelete(n.id)}
                                 className="text-[10px] font-bold text-zinc-400 hover:text-red-500 uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                               >
-                                Delete <Trash2 className="w-3 h-3" />
+                                {t('notifications.delete')} <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
                           </div>
@@ -201,7 +203,7 @@ export default function NotificationDropdown({ user }: { user: User }) {
               
               <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-100 dark:border-zinc-800 text-center">
                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                  Showing latest 20 notifications
+                  {t('notifications.latest')}
                 </p>
               </div>
             </motion.div>

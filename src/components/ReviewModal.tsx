@@ -3,6 +3,7 @@ import { Star, X, Send, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../services/supabase';
 import { User, Job } from '../types';
+import { useLanguage } from '../LanguageContext';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -20,15 +21,16 @@ export default function ReviewModal({ isOpen, onClose, job, workerId, workerName
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      setError('Please select a rating');
+      setError(t('review.errorRating'));
       return;
     }
     if (comment.trim().length < 10) {
-      setError('Comment must be at least 10 characters');
+      setError(t('review.errorComment'));
       return;
     }
 
@@ -79,8 +81,8 @@ export default function ReviewModal({ isOpen, onClose, job, workerId, workerName
             <div className="p-8 space-y-8">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
-                  <h2 className="text-2xl font-bold">Rate Worker</h2>
-                  <p className="text-sm text-zinc-500">How was your experience with {workerName}?</p>
+                  <h2 className="text-2xl font-bold">{t('review.rateWorker')}</h2>
+                  <p className="text-sm text-zinc-500">{t('review.experienceWith')} {workerName}?</p>
                 </div>
                 <button 
                   onClick={onClose}
@@ -92,7 +94,7 @@ export default function ReviewModal({ isOpen, onClose, job, workerId, workerName
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3 text-center">
-                  <label className="text-sm font-bold uppercase tracking-widest text-zinc-400">Your Rating</label>
+                  <label className="text-sm font-bold uppercase tracking-widest text-zinc-400">{t('review.yourRating')}</label>
                   <div className="flex justify-center gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -116,12 +118,12 @@ export default function ReviewModal({ isOpen, onClose, job, workerId, workerName
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-sm font-bold uppercase tracking-widest text-zinc-400">Review Comment</label>
+                  <label className="text-sm font-bold uppercase tracking-widest text-zinc-400">{t('review.reviewComment')}</label>
                   <textarea
                     required
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Describe your experience working with this professional..."
+                    placeholder={t('review.placeholder')}
                     className="w-full px-6 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all min-h-[150px] resize-none"
                   />
                 </div>
@@ -142,7 +144,7 @@ export default function ReviewModal({ isOpen, onClose, job, workerId, workerName
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      Submit Review
+                      {t('review.submit')}
                       <Send className="w-4 h-4" />
                     </>
                   )}

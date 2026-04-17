@@ -2,15 +2,19 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { User, Role } from '../types';
-import { Mail, Lock, User as UserIcon, Briefcase, ArrowRight, MapPin, AlertTriangle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Briefcase, ArrowRight, MapPin, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
+import { useLanguage } from '../LanguageContext';
 
 export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState<Role>((searchParams.get('role') as Role) || 'worker');
   const [field, setField] = useState('labor');
@@ -33,6 +37,20 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
     const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin706';
     const isAdmin = email === adminEmail ? 1 : 0;
 
+    const recordActivity = async (userId: number, action: string) => {
+      try {
+        await supabase.from('activity_logs').insert([{
+          user_id: userId,
+          action,
+          ip_address: 'Logged via Web', // In a real app, you'd get this from the request or a service
+          user_agent: navigator.userAgent,
+          metadata: { timestamp: new Date().toISOString() }
+        }]);
+      } catch (err) {
+        console.error('Failed to record activity:', err);
+      }
+    };
+
     try {
       if (isLogin) {
         // Special case for the requested admin credentials
@@ -45,6 +63,7 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
 
           if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
+          let finalUser;
           if (!existingUser) {
             const { data: newUser, error: insertError } = await supabase
               .from('users')
@@ -52,7 +71,7 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
               .select()
               .single();
             if (insertError) throw insertError;
-            onLogin({ ...newUser, isAdmin: true });
+            finalUser = newUser;
           } else {
             const { data: updatedUser, error: updateError } = await supabase
               .from('users')
@@ -61,8 +80,10 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
               .select()
               .single();
             if (updateError) throw updateError;
-            onLogin({ ...updatedUser, isAdmin: true });
+            finalUser = updatedUser;
           }
+          await recordActivity(finalUser.id, 'login');
+          onLogin({ ...finalUser, isAdmin: true });
         } else {
           const { data: user, error: loginError } = await supabase
             .from('users')
@@ -73,6 +94,7 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
 
           if (loginError) throw new Error('Invalid credentials');
           if (!user) throw new Error('Invalid credentials');
+          await recordActivity(user.id, 'login');
           onLogin({ ...user, isAdmin: !!user.is_admin });
         }
       } else {
@@ -81,6 +103,7 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
           .insert([{ 
             email, 
             password, 
+            phone,
             name, 
             role: isAdmin ? 'admin' : role, 
             field, 
@@ -91,6 +114,7 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
           .single();
 
         if (regError) throw regError;
+        await recordActivity(newUser.id, 'registration');
         onLogin({ ...newUser, isAdmin: !!newUser.is_admin });
       }
       
@@ -113,100 +137,100 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
       exit={{ opacity: 0, y: -20 }}
       className="max-w-md mx-auto px-4 py-8 sm:py-12"
     >
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl">
-        <div className="text-center mb-8 sm:mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2">
-            {isLogin ? 'Welcome Back' : 'Join KamayiChowk'}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-10 shadow-2xl">
+        <div className="text-center mb-6 sm:mb-10">
+          <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">
+            {isLogin ? t('auth.loginTitle') : t('auth.signupTitle')}
           </h2>
-          <p className="text-xs sm:text-sm text-zinc-500">
-            {isLogin ? 'Enter your credentials to continue' : 'Start your journey today'}
+          <p className="text-[10px] sm:text-sm text-zinc-500">
+            {isLogin ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-5">
           {!isLogin && (
             <>
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Full Name</label>
+              <div className="space-y-1 sm:space-y-2">
+                <label className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">{t('auth.fullName')}</label>
                 <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
+                  <UserIcon className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-5 sm:h-5 text-zinc-400" />
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
+                    className="w-full pl-9 sm:pl-12 pr-4 py-2.5 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-xs sm:text-base"
                     placeholder="John Doe"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">I am here to</label>
+              <div className="space-y-1 sm:space-y-2">
+                <label className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">{t('auth.iAmHereTo')}</label>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setRole('worker')}
-                    className={`py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 font-semibold transition-all text-xs sm:text-sm ${
+                    className={`py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 font-semibold transition-all text-[10px] sm:text-sm ${
                       role === 'worker' 
                         ? 'bg-emerald-500 border-emerald-500 text-white' 
                         : 'border-zinc-100 dark:border-zinc-800 hover:border-emerald-500/50'
                     }`}
                   >
-                    WORK
+                    {t('auth.work')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole('hirer')}
-                    className={`py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 font-semibold transition-all text-xs sm:text-sm ${
+                    className={`py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 font-semibold transition-all text-[10px] sm:text-sm ${
                       role === 'hirer' 
                         ? 'bg-emerald-500 border-emerald-500 text-white' 
                         : 'border-zinc-100 dark:border-zinc-800 hover:border-emerald-500/50'
                     }`}
                   >
-                    HIRE
+                    {t('auth.hire')}
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Location</label>
+              <div className="space-y-1 sm:space-y-2">
+                <label className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">{t('auth.location')}</label>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
+                  <MapPin className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-5 sm:h-5 text-zinc-400" />
                   <input
                     type="text"
                     required
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
-                    placeholder="e.g. New York, NY"
+                    className="w-full pl-9 sm:pl-12 pr-4 py-2.5 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-xs sm:text-base"
+                    placeholder="e.g. Lahore, Pakistan"
                   />
                 </div>
               </div>
 
               {role === 'worker' && (
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Expertise</label>
+                <div className="space-y-1 sm:space-y-2">
+                  <label className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">{t('auth.expertise')}</label>
                   <select
                     value={field}
                     onChange={(e) => setField(e.target.value)}
-                    className="w-full px-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-semibold text-xs sm:text-base"
                   >
-                    <option value="labor">Labor</option>
-                    <option value="electrician">Electrician</option>
-                    <option value="plumber">Plumber</option>
-                    <option value="carpenter">Carpenter</option>
-                    <option value="mechanic">Mechanic</option>
+                    <option value="labor">{t('jobs.labor')}</option>
+                    <option value="electrician">{t('jobs.electrician')}</option>
+                    <option value="plumber">{t('jobs.plumber')}</option>
+                    <option value="carpenter">{t('jobs.carpenter')}</option>
+                    <option value="mechanic">{t('jobs.mechanic')}</option>
                   </select>
                 </div>
               )}
             </>
           )}
 
-          <div className="space-y-1.5 sm:space-y-2">
-            <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Email Address</label>
+          <div className="space-y-1 sm:space-y-2">
+            <label className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">{t('auth.email')}</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
+              <Mail className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-5 sm:h-5 text-zinc-400" />
               <input
                 type="email"
                 id="user_email_login"
@@ -215,32 +239,58 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="off"
-                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
+                className="w-full pl-9 sm:pl-12 pr-4 py-2.5 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-xs sm:text-base"
                 placeholder="you@example.com"
               />
             </div>
           </div>
 
-          <div className="space-y-1.5 sm:space-y-2">
-            <label className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">Password</label>
+          {!isLogin && (
+            <div className="space-y-1 sm:space-y-2">
+              <label className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">{t('auth.phone') || 'Phone Number'}</label>
+              <div className="relative">
+                <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-5 sm:h-5 flex items-center justify-center">
+                  <span className="text-zinc-400 font-bold text-[10px] sm:text-xs">#</span>
+                </div>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full pl-9 sm:pl-12 pr-4 py-2.5 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-xs sm:text-base"
+                  placeholder="e.g. +92 300 1234567"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1 sm:space-y-2">
+            <label className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500">{t('auth.password')}</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
+              <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-5 sm:h-5 text-zinc-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 id="user_password_login"
                 name="user_password_login"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm sm:text-base"
+                className="w-full pl-9 sm:pl-12 pr-10 sm:pr-14 py-2.5 sm:py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-xs sm:text-base"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors text-zinc-400"
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5 sm:w-5 sm:h-5" /> : <Eye className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
+              </button>
             </div>
           </div>
 
           {error && (
-            <p className="text-xs sm:text-sm font-semibold text-red-500 bg-red-50 dark:bg-red-900/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-100 dark:border-red-900/30">
+            <p className="text-[10px] sm:text-sm font-semibold text-red-500 bg-red-50 dark:bg-red-900/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-100 dark:border-red-900/30">
               {error}
             </p>
           )}
@@ -248,10 +298,10 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 sm:py-5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 text-sm sm:text-base"
+            className="w-full py-3.5 sm:py-5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 text-xs sm:text-base"
           >
-            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
-            {!loading && <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />}
+            {loading ? t('auth.processing') : isLogin ? t('auth.signIn') : t('auth.createAccount')}
+            {!loading && <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
           </button>
         </form>
 
@@ -261,7 +311,7 @@ export default function Auth({ onLogin }: { onLogin: (user: User) => void }) {
             onClick={() => setIsLogin(!isLogin)}
             className="text-[10px] sm:text-xs font-semibold text-zinc-500 hover:text-emerald-500 transition-colors uppercase tracking-wider"
           >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
           </button>
         </div>
       </div>

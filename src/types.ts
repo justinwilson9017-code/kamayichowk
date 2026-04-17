@@ -15,7 +15,11 @@ export interface User {
   field?: string;
   location?: string;
   picture?: string;
+  phone?: string;
   isAdmin: boolean;
+  last_seen?: string;
+  is_online?: boolean;
+  hourly_rate?: number;
 }
 
 export interface Job {
@@ -27,7 +31,11 @@ export interface Job {
   field: string;
   location: string;
   budget: number;
-  status: 'active' | 'completed' | 'deleted';
+  status: 'active' | 'completed' | 'deleted' | 'pending' | 'assigned' | 'in_progress';
+  booking_type: 'bid' | 'instant';
+  assigned_worker_id?: number;
+  assigned_worker_name?: string;
+  assigned_worker_picture?: string;
   created_at: string;
 }
 
@@ -50,8 +58,18 @@ export interface Notification {
   user_id: number;
   title: string;
   message: string;
-  type: 'job_new' | 'bid_update' | 'bid_new' | 'review_request' | 'message';
+  type: 'job_new' | 'bid_update' | 'bid_new' | 'review_request' | 'message' | 'bid_accepted' | 'bid_rejected';
   link?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface Message {
+  id: number;
+  job_id: number;
+  sender_id: number;
+  receiver_id: number;
+  text: string;
   is_read: boolean;
   created_at: string;
 }

@@ -8,13 +8,20 @@ import WorkerDashboard from './pages/WorkerDashboard';
 import HirerDashboard from './pages/HirerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import { motion, AnimatePresence } from 'motion/react';
+
+import { LanguageProvider } from './LanguageContext';
+import { usePresence } from './hooks/usePresence';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  usePresence(user);
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'dark') || 'light';
@@ -38,42 +45,49 @@ export default function App() {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   return (
-    <Router>
-      <div className={`min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
-        <Navbar user={user} onLogout={handleLogout} theme={theme} onToggleTheme={toggleTheme} />
-        <main className="pt-16">
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={<Home user={user} />} />
-              <Route path="/auth" element={!user ? <Auth onLogin={handleLogin} /> : <Navigate to="/" />} />
-              
-              <Route 
-                path="/dashboard" 
-                element={
-                  user?.role === 'worker' ? <WorkerDashboard user={user} onLogout={handleLogout} /> :
-                  user?.role === 'hirer' ? <HirerDashboard user={user} onLogout={handleLogout} /> :
-                  user?.role === 'admin' ? <AdminDashboard user={user} onLogout={handleLogout} /> :
-                  <Navigate to="/auth" />
-                } 
-              />
+    <LanguageProvider>
+      <Router>
+        <div className={`min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
+          <Navbar user={user} onLogout={handleLogout} theme={theme} onToggleTheme={toggleTheme} />
+          <main className="pt-16">
+            <AnimatePresence mode="wait">
+              <Routes>
+                <Route path="/" element={<Home user={user} />} />
+                <Route path="/auth" element={!user ? <Auth onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
+                
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    user?.role === 'worker' ? <WorkerDashboard user={user} onLogout={handleLogout} /> :
+                    user?.role === 'hirer' ? <HirerDashboard user={user} onLogout={handleLogout} /> :
+                    user?.role === 'admin' ? <AdminDashboard user={user} onLogout={handleLogout} /> :
+                    <Navigate to="/auth" />
+                  } 
+                />
 
-              <Route 
-                path="/admin" 
-                element={
-                  user?.isAdmin ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />
-                } 
-              />
-              
-              <Route 
-                path="/profile" 
-                element={user ? <Profile user={user} onUpdate={handleLogin} onLogout={handleLogout} /> : <Navigate to="/auth" />} 
-              />
+                <Route 
+                  path="/admin" 
+                  element={
+                    user?.isAdmin ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />
+                  } 
+                />
+                
+                <Route 
+                  path="/profile" 
+                  element={user ? <Profile user={user} onUpdate={handleLogin} onLogout={handleLogout} /> : <Navigate to="/auth" />} 
+                />
 
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </AnimatePresence>
-        </main>
-      </div>
-    </Router>
+                <Route 
+                  path="/settings" 
+                  element={user ? <Settings /> : <Navigate to="/auth" />} 
+                />
+
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </AnimatePresence>
+          </main>
+        </div>
+      </Router>
+    </LanguageProvider>
   );
 }
